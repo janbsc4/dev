@@ -15,7 +15,9 @@ cd dev
 
 Start your agentic coding tool from this directory, then ask it to run the symlink recipe:
 
-> Run `recipes/create-skills-symlink.md` from this repository.
+```text
+Run `recipes/create-skills-symlink.md` from this repository.
+```
 
 The recipe will find the agent's user-level skills location, explain the proposed links, and ask for approval before creating them. Keep the cloned repository in place because the installed skills link back to it.
 
@@ -25,7 +27,9 @@ Recipes are procedures meant to be run once to set up or change something. They 
 
 For later recipes, give your agent this repository's URL and the exact recipe path. For example:
 
-> Use <https://github.com/janbsc4/dev> and run the recipe at `recipes/create-hook-agent-idle-notification.md`.
+```text
+Use https://github.com/janbsc4/dev and run the recipe at `recipes/create-hook-agent-idle-notification.md`.
+```
 
 | Recipe | What it does |
 | --- | --- |
