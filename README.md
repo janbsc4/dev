@@ -33,6 +33,7 @@ Use https://github.com/janbsc4/dev and run the recipe at `recipes/create-hook-ag
 
 | Recipe | What it does |
 | --- | --- |
+| [`create-cv-generator`](recipes/create-cv-generator.md) | **BETA:** Adds a local, editable CV generator to an existing website, with measured pagination and verified PDF output, without publishing it through the normal build. |
 | [`create-hook-agent-idle-notification`](recipes/create-hook-agent-idle-notification.md) | Adds a macOS desktop notification and sound when a command-line coding agent finishes a response. |
 | [`create-hook-commit-recap`](recipes/create-hook-commit-recap.md) | Creates a session-start hook that detects unseen commits by other authors and offers an on-request recap. |
 | [`create-skills-symlink`](recipes/create-skills-symlink.md) | Safely links this repository's skills into a user-selected agent skills location. |
