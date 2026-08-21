@@ -6,17 +6,19 @@ These skills are mostly adapted versions of [Matt's](https://github.com/mattpoco
 
 ## First-time setup
 
-Clone the repository and enter its root directory:
+You need git and an agentic coding harness like Claude Code set up.
+
+Clone this repository and enter its root directory:
 
 ```bash
 git clone https://github.com/janbsc4/dev.git
 cd dev
 ```
 
-Start your agentic coding tool from this directory, then ask it to run the symlink recipe:
+Start your agentic coding tool there and ask it to run the symlink recipe:
 
 ```text
-Run `recipes/create-skills-symlink.md` from this repository.
+Run `./recipes/create-skills-symlink.md`
 ```
 
 The recipe will find the agent's user-level skills location, explain the proposed links, and ask for approval before creating them. Keep the cloned repository in place because the installed skills link back to it.
@@ -25,7 +27,7 @@ The recipe will find the agent's user-level skills location, explain the propose
 
 Recipes are procedures meant to be run once to set up or change something. They are not persistent skills and do not need to occupy an agent's context after the work is complete.
 
-For later recipes, give your agent this repository's URL and the exact recipe path. For example:
+They dont need to be installed locally, give your agent this repository's URL and the recipe path. For example:
 
 ```text
 Use https://github.com/janbsc4/dev and run the recipe at `recipes/create-hook-agent-idle-notification.md`.
@@ -36,7 +38,7 @@ Use https://github.com/janbsc4/dev and run the recipe at `recipes/create-hook-ag
 | [`create-cv-generator`](recipes/create-cv-generator.md) | **BETA:** Adds a local, editable CV generator to an existing website, with measured pagination and verified PDF output, without publishing it through the normal build. |
 | [`create-hook-agent-idle-notification`](recipes/create-hook-agent-idle-notification.md) | Adds a macOS desktop notification and sound when a command-line coding agent finishes a response. |
 | [`create-hook-commit-recap`](recipes/create-hook-commit-recap.md) | Creates a session-start hook that detects unseen commits by other authors and offers an on-request recap. |
-| [`create-skills-symlink`](recipes/create-skills-symlink.md) | Safely links this repository's skills into a user-selected agent skills location. |
+| [`create-skills-symlinks`](recipes/create-skills-symlink.md) | Finds your agent's user-level skills folder, asks which of this repository's skills you want, and links each selected one. |
 
 ## Skills
 
