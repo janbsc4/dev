@@ -47,8 +47,9 @@ Use https://github.com/janbsc4/dev and run the recipe at `recipes/hook-agent-idl
 | --- | --- |
 | [`skills-symlinks`](recipes/skills-symlinks.md) | **START HERE:** Finds your agent's user-level skills folder, asks which of this repository's skills you want, and links each selected one. |
 | [`hook-agent-idle-notification`](recipes/hook-agent-idle-notification.md) | Adds a macOS desktop notification and sound when a command-line coding agent finishes a response. |
-| [`hook-commit-recap`](recipes/hook-commit-recap.md) | Creates a session-start hook that detects unseen commits by other authors and offers an on-request recap. |
+| [`hook-commit-recap`](recipes/hook-commit-recap.md) | Creates a session-start hook that fetches branches, detects unseen work by other authors, and offers a branch-aware recap in the first response. |
 | [`cv-generator`](recipes/cv-generator.md) | **BETA:** Adds a local, editable CV generator to an existing website, with measured pagination and verified PDF output, without publishing it through the normal build. |
+| [`kiro-cli-t3-code`](recipes/kiro-cli-t3-code.md) | **BETA:** Connects Kiro CLI to T3 Code through ACP, with a released-support check and an isolated source-build fallback while upstream support remains unmerged. |
 
 ## Skills
 
