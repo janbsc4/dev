@@ -1,8 +1,8 @@
 ---
 name: design
-description: Improve the visual design of anything that compiles or renders to a page — a LaTeX CV, poster, slide deck, printable report, or website. Use when asked to redesign, overhaul the look of, or fix the typography of a rendered document, and when a rendered document looks wrong but the source looks correct.
+description: Improve the visual design of anything. Use when asked to design, redesign, overhaul the look of something and when a rendered document looks wrong but the source looks correct.
 ---
-A rendered document has two representations, and they disagree. Reviewing the source tells you what was requested. Only the render tells you what was implemented.
+A rendered document/website has two representations, and they disagree. Reviewing the source tells you what was requested. Only the render tells you what was implemented.
 
 First, route the work:
 

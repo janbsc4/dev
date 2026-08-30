@@ -55,6 +55,8 @@ Skills are reusable instructions that agents can load when a task calls for them
 
 | Skill | What it does |
 | --- | --- |
+| `design` | Improves the visual design of anything: builds a render loop and checks what the source alone can't show. Routes website work to `frontend-design`. |
+| `frontend-design` | Sub-skill of `design` for building new UI or reshaping existing UI: aesthetic direction, typography, layout, and copy that don't read as templated defaults. |
 | `grill` | Stress-tests a plan, decision, or idea through a structured interview, then records the settled decisions in a numbered plan file. |
 | `unslop` | Always running, it makes the output text from agents more bearable and readable. |
 | `writing-for-agents` | Guides the creation and revision of skills, agent instruction files, and other documents that agents consume. |
