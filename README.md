@@ -23,6 +23,13 @@ Run ./recipes/skills-symlinks.md
 
 The recipe will find the agent's user-level skills location, explain the proposed links, and ask for approval before creating them. Keep the cloned repository in place because the installed skills link back to it.
 
+Alternatively, install skills without cloning, using the skills CLI. This needs Node.js, because npx ships with it:
+
+```bash
+npx skills add janbsc4/dev              # interactive, pick skills
+npx skills add janbsc4/dev --skill grill -g -a opencode -y
+```
+
 ## Recipes
 
 Recipes are procedures meant to be run once to set up or change something. They are not persistent skills and do not need to occupy an agent's context after the work is complete.

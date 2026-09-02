@@ -6,7 +6,7 @@ A rendered document/website has two representations, and they disagree. Reviewin
 
 First, route the work:
 
-- **Website or UI** — load the [frontend skill](https://github.com/janbsc4/dev/blob/main/skills/frontend/SKILL.md) and follow it for aesthetic direction. The render loop and defect checklist in this file still apply for verification.
+- **Website or UI** — load the [frontend skill](https://raw.githubusercontent.com/janbsc4/dev/main/skills/frontend/SKILL.md) and follow it for aesthetic direction. The render loop and defect checklist in this file still apply for verification.
 - **Print or static document** — continue with Step 1.
 
 Whichever branch you take, the first deliverable is never a design change. It is a **render loop**: one
