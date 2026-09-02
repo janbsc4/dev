@@ -48,6 +48,7 @@ Use https://github.com/janbsc4/dev and run the recipe at `recipes/hook-agent-idl
 | [`skills-symlinks`](recipes/skills-symlinks.md) | **START HERE:** Finds your agent's user-level skills folder, asks which of this repository's skills you want, and links each selected one. |
 | [`hook-agent-idle-notification`](recipes/hook-agent-idle-notification.md) | Adds a macOS desktop notification and sound when a command-line coding agent finishes a response. |
 | [`hook-commit-recap`](recipes/hook-commit-recap.md) | Creates a session-start hook that fetches branches, detects unseen work by other authors, and offers a branch-aware recap in the first response. |
+| [`add-motion-design`](recipes/add-motion-design.md) | Adds one cohesive motion design pass to a finished website on a new branch, with the focus on choreography, timing, and restraint. |
 
 ## Skills
 
