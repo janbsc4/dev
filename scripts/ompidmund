@@ -1,0 +1,55 @@
+#!/usr/bin/env bash
+# ompidmund — open the last assistant response of the current project's
+# most recent omp session in Edmund (Markdown editor).
+set -euo pipefail
+
+SESSIONS_DIR="$HOME/.omp/agent/sessions"
+cwd=$(pwd -P)
+tmp="${TMPDIR:-/tmp}"
+tmp="${tmp%/}"
+
+# omp stores sessions per working directory. Unlike pi, it names the
+# folder home-relative: /Users/jan/dev -> -dev, $HOME itself -> -,
+# $TMPDIR subdirectories -> -tmp-<relative path>, and anything outside
+# both falls back to the absolute scheme --<path with / replaced by ->--.
+case "$cwd" in
+  "$HOME")
+    key="-" ;;
+  "$HOME"/*)
+    rel="${cwd#"$HOME"}"
+    rel="${rel#/}"
+    key="-${rel//\//-}" ;;
+  "$tmp"/*)
+    rel="${cwd#"$tmp"}"
+    rel="${rel#/}"
+    key="-tmp-${rel//\//-}" ;;
+  *)
+    key="--${cwd#/}"
+    key="${key//\//-}--" ;;
+esac
+
+dir="$SESSIONS_DIR/$key"
+[ -d "$dir" ] || { echo "No omp sessions found for $(pwd)" >&2; exit 1; }
+
+# Most recently modified session file for this directory
+file=$(ls -t "$dir"/*.jsonl 2>/dev/null | head -n 1)
+[ -n "$file" ] || { echo "No session files in $dir" >&2; exit 1; }
+
+# Last assistant message: join all text blocks (skip thinking/tool calls)
+text=$(jq -rs '
+  map(select(.type == "message" and .message.role == "assistant"))
+  | last
+  | .message.content
+  | map(select(.type == "text") | .text)
+  | join("\n\n")
+' "$file")
+
+[ -n "$text" ] || { echo "No assistant response found in $file" >&2; exit 1; }
+
+# macOS mktemp rejects templates with characters after the X's,
+# so create the file first and rename it afterwards.
+out=$(mktemp "${TMPDIR:-/tmp}/omp-response-XXXXXX")
+mv "$out" "$out.md" && out="$out.md"
+printf '%s\n' "$text" > "$out"
+
+open -a Edmund "$out"

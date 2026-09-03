@@ -69,7 +69,7 @@ Use https://github.com/janbsc4/dev and run the prompt template at `prompts/hook-
 | [`hook-agent-idle-notification`](prompts/hook-agent-idle-notification.md) | Adds a macOS desktop notification and sound when a command-line coding agent finishes a response. |
 | [`hook-commit-recap`](prompts/hook-commit-recap.md) | Creates a session-start hook that fetches branches, detects unseen work by other authors, and offers a branch-aware recap in the first response. |
 | [`add-motion-design`](prompts/add-motion-design.md) | Adds one cohesive motion design pass to a finished website on a new branch, with the focus on choreography, timing, and restraint. |
-| [`pidmund`](prompts/pidmund.md) | Installs `pidmund`, a command that opens the most recent assistant response from a pi chat session in the [Edmund Markdown editor](https://github.com/I7T5/Edmund). |
+| [`pidmund`](prompts/pidmund.md) | Installs `pidmund` and `ompidmund`, commands that open the most recent assistant response from a pi or omp chat session in the [Edmund Markdown editor](https://github.com/I7T5/Edmund). |
 
 ## Scripts
 
@@ -78,6 +78,7 @@ Standalone command-line scripts live in [`scripts/`](scripts/). They are install
 | Script | What it does |
 | --- | --- |
 | [`pidmund`](scripts/pidmund) | Opens the last assistant response of the current project's most recent pi session in the Edmund Markdown editor. Run it from any directory where you have chatted with pi. |
+| [`ompidmund`](scripts/ompidmund) | Same as `pidmund`, but for omp sessions (with omp's home-relative session-folder naming). |
 
 ## Skills
 
