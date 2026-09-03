@@ -9,7 +9,7 @@ Run it once per machine.
 
 The finished setup must:
 
-- find this repository's `bin/pidmund` script by absolute canonical path
+- find this repository's `scripts/pidmund` script by absolute canonical path
 - verify the prerequisites: macOS, `jq`, the pi CLI, and Edmund in `/Applications`
 - install the script as `pidmund` into a directory that is already on the user's `PATH`
 - prefer `~/.local/bin` when it exists and is on the `PATH`, otherwise ask where to install
@@ -19,7 +19,7 @@ The finished setup must:
 
 ## 1. Resolve the source script
 
-Find the repository root with Git or from this template's location, then resolve `<repository>/bin/pidmund` to an absolute canonical path. Check that the file is readable and executable.
+Find the repository root with Git or from this template's location, then resolve `<repository>/scripts/pidmund` to an absolute canonical path. Check that the file is readable and executable.
 
 Confirm that the clone is in a permanent location. A symbolic link into a temporary checkout breaks when the repository moves or is deleted.
 
