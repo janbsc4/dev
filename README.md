@@ -1,6 +1,6 @@
 # Agent Skills and Recipes
 
-My repository with skills, one-time recipes, and other agent tooling.
+My repository with skills, one-time recipes, agent tooling, and small scripts.
 
 These skills are mostly adapted versions of [Matt's](https://github.com/mattpocock/skills/tree/main) and [poteto's](https://github.com/cursor/plugins/tree/main/pstack).
 
@@ -23,7 +23,7 @@ Run ./recipes/skills-symlinks.md
 
 The recipe will find the agent's user-level skills location, explain the proposed links, and ask for approval before creating them. Keep the cloned repository in place because the installed skills link back to it.
 
-Alternatively, install skills without cloning, using the skills CLI. This needs Node.js, because npx ships with it:
+Alternatively, install skills without cloning, using the skills CLI. This needs Node.js:
 
 ```bash
 npx skills add janbsc4/dev              # interactive, pick skills
@@ -56,6 +56,15 @@ Use https://github.com/janbsc4/dev and run the recipe at `recipes/hook-agent-idl
 | [`hook-agent-idle-notification`](recipes/hook-agent-idle-notification.md) | Adds a macOS desktop notification and sound when a command-line coding agent finishes a response. |
 | [`hook-commit-recap`](recipes/hook-commit-recap.md) | Creates a session-start hook that fetches branches, detects unseen work by other authors, and offers a branch-aware recap in the first response. |
 | [`add-motion-design`](recipes/add-motion-design.md) | Adds one cohesive motion design pass to a finished website on a new branch, with the focus on choreography, timing, and restraint. |
+| [`pidmund`](recipes/pidmund.md) | Installs `pidmund`, a command that opens the most recent assistant response from a pi chat session in the Edmund Markdown editor. |
+
+## Scripts
+
+Standalone command-line scripts live in [`bin/`](bin/). They are installed by their recipes, which check prerequisites and pick an install directory.
+
+| Script | What it does |
+| --- | --- |
+| [`pidmund`](bin/pidmund) | Opens the last assistant response of the current project's most recent pi session in the Edmund Markdown editor. Run it from any directory where you have chatted with pi. |
 
 ## Skills
 
