@@ -1,5 +1,6 @@
-# Add Motion Design
-
+---
+description: Add one cohesive motion design pass to a finished website on a new branch, with the focus on choreography, timing, and restraint
+---
 The repo contains a finished website with no motion in it. Add one cohesive motion design pass to that site, on a new separate branch. The subject, content, and design are already decided; your job is motion that fits what's already there. How well the motion serves the existing site is part of what's being evaluated.
 
 Context you should know: this is going into a video comparing you against other frontier models, shown to a large audience, and your work will be credited to you by name. Every model gets this exact prompt. So go nuts and show people what you're actually capable of.

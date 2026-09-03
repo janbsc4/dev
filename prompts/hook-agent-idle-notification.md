@@ -1,6 +1,7 @@
-# Recipe: macOS agent completion notification
-
-Use this recipe to add a desktop notification when a command-line coding agent finishes a response. The agent's hook format may differ, so discover and use its native completion event rather than copying configuration from another agent.
+---
+description: Add a macOS desktop notification and sound when a command-line coding agent finishes a response
+---
+Add a desktop notification when a command-line coding agent finishes a response. The agent's hook format may differ, so discover and use its native completion event rather than copying configuration from another agent.
 
 ## Result
 
@@ -111,7 +112,7 @@ Confirm that:
 
 Then restart or reload the agent if hook changes require it. Submit a trivial prompt and wait for the response to finish. Exactly one notification should appear.
 
-The recipe is complete when both the direct test and the real completion event produce one notification without changing the agent's response or exit status.
+The work is complete when both the direct test and the real completion event produce one notification without changing the agent's response or exit status.
 
 ## Troubleshooting
 

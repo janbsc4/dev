@@ -1,6 +1,7 @@
-# Recipe: commit recap hook
-
-Use this recipe to create a session-start hook that fetches the repository, notices commits made by other people since the last review together with their branch context, and makes the acting agent mention the available recap directly in its first response. It records review state, not an activity log.
+---
+description: Create a session-start hook that fetches branches, detects unseen work by other authors, and offers a branch-aware recap in the first response
+---
+Create a session-start hook that fetches the repository, notices commits made by other people since the last review together with their branch context, and makes the acting agent mention the available recap directly in its first response. It records review state, not an activity log.
 
 The Git scanner and the hook integration must remain separate. The scanner produces neutral data. A small adapter translates that data into the hook format supported by the installed coding agent.
 
@@ -217,7 +218,7 @@ Registration is complete when the harness reloads the configuration, starts a se
 
 ## 6. Define the recap protocol
 
-Give the acting agent these instructions through private hook context, a project instruction, or the user's explicit reference to this recipe:
+Give the acting agent these instructions through private hook context, a project instruction, or the user's explicit reference to this prompt template:
 
 1. In the first response of the session, directly state that a recap is available and summarize its size, including both commit and branch counts. Do this even when the user's first request is unrelated, but keep it to one sentence and do not repeat it later.
 2. Do not produce the full recap merely because pending work exists; continue with the user's request unless they ask for the recap.
@@ -261,7 +262,7 @@ Then test the installed integration:
 5. Request the recap and verify that every pending branch and commit is covered before marking.
 6. Start another session and confirm that reviewed work no longer triggers a recap mention.
 
-The recipe is complete when the direct scanner checks and the real session hook both pass without relying on a particular model, event name, or hook-response schema.
+The work is complete when the direct scanner checks and the real session hook both pass without relying on a particular model, event name, or hook-response schema.
 
 ## Troubleshooting
 
