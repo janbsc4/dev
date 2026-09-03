@@ -1,5 +1,6 @@
-# Recipe: pidmund
-
+---
+description: Install pidmund, a command that opens the most recent assistant response from a pi chat session in the Edmund Markdown editor
+---
 Install `pidmund`, a one-command way to open the most recent assistant response from a pi chat session in Edmund, the Markdown editor app for macOS.
 
 Run it once per machine.
@@ -18,7 +19,7 @@ The finished setup must:
 
 ## 1. Resolve the source script
 
-Find the repository root with Git or from this recipe's location, then resolve `<repository>/bin/pidmund` to an absolute canonical path. Check that the file is readable and executable.
+Find the repository root with Git or from this template's location, then resolve `<repository>/bin/pidmund` to an absolute canonical path. Check that the file is readable and executable.
 
 Confirm that the clone is in a permanent location. A symbolic link into a temporary checkout breaks when the repository moves or is deleted.
 
