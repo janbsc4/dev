@@ -6,7 +6,8 @@ set -euo pipefail
 SESSIONS_DIR="$HOME/.pi/agent/sessions"
 # Sessions are stored per working directory, path with / replaced by -
 # e.g. /Users/jan/cv -> --Users-jan-cv--
-key="--${PWD#/}"; key="${key//\//-}--"
+cwd=$(pwd -P)
+key="--${cwd#/}"; key="${key//\//-}--"
 
 dir="$SESSIONS_DIR/$key"
 [ -d "$dir" ] || { echo "No pi sessions found for $(pwd)" >&2; exit 1; }

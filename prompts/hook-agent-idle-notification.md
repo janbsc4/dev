@@ -111,10 +111,8 @@ printf '%s\n' '{"cwd":"/absolute/path/to/project","message":"Agent finished resp
 AGENT_NAME="Test agent" AGENT_CWD="/absolute/path/to/project" \
   bash "/absolute/path/to/project/hooks/agent-notify.sh"
 ```
-```
 
 Confirm that:
-
 - the command exits with status 0
 - macOS plays the Glass sound
 - a notification appears with `Test agent` as its title
