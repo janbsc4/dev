@@ -4,17 +4,33 @@
 set -euo pipefail
 
 SESSIONS_DIR="$HOME/.pi/agent/sessions"
-# Sessions are stored per working directory, path with / replaced by -
-# e.g. /Users/jan/cv -> --Users-jan-cv--
-cwd=$(pwd -P)
-key="--${cwd#/}"; key="${key//\//-}--"
 
-dir="$SESSIONS_DIR/$key"
-[ -d "$dir" ] || { echo "No pi sessions found for $(pwd)" >&2; exit 1; }
+# Inside a pi session PI_SESSION_FILE names the exact transcript. Preferring it
+# avoids picking up a collaborating subagent's transcript, because process-mode
+# subagents write into the same cwd-scoped directory as their coordinator.
+resolve_session_file() {
+  if [ -n "${PI_SESSION_FILE:-}" ] && [ -f "$PI_SESSION_FILE" ]; then
+    printf '%s\n' "$PI_SESSION_FILE"
+    return 0
+  fi
 
-# Most recently modified session file for this directory
-file=$(ls -t "$dir"/*.jsonl 2>/dev/null | head -n 1)
-[ -n "$file" ] || { echo "No session files in $dir" >&2; exit 1; }
+  # Outside pi: newest session file for this working directory.
+  # Sessions are stored per working directory, / replaced by -,
+  # e.g. /Users/jan/cv -> --Users-jan-cv--
+  local cwd key dir
+  cwd=$(pwd -P)
+  key="--${cwd#/}"
+  key="${key//\//-}--"
+  dir="$SESSIONS_DIR/$key"
+  [ -d "$dir" ] || { echo "No pi sessions found for $(pwd)" >&2; return 1; }
+
+  local file
+  file=$(ls -t "$dir"/*.jsonl 2>/dev/null | head -n 1)
+  [ -n "$file" ] || { echo "No session files in $dir" >&2; return 1; }
+  printf '%s\n' "$file"
+}
+
+file=$(resolve_session_file)
 
 # Last assistant message: join all text blocks (skip thinking/tool calls)
 text=$(jq -rs '

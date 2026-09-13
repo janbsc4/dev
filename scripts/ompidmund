@@ -4,6 +4,7 @@
 set -euo pipefail
 
 SESSIONS_DIR="$HOME/.omp/agent/sessions"
+TERMINAL_SESSIONS_DIR="$HOME/.omp/agent/terminal-sessions"
 cwd=$(pwd -P)
 tmp="${TMPDIR:-/tmp}"
 tmp="${tmp%/}"
@@ -28,12 +29,50 @@ case "$cwd" in
     key="${key//\//-}--" ;;
 esac
 
-dir="$SESSIONS_DIR/$key"
-[ -d "$dir" ] || { echo "No omp sessions found for $(pwd)" >&2; exit 1; }
+# omp exports no session-file variable (its env reference documents none), so
+# prefer the per-terminal pointer it keeps under terminal-sessions/<tty>. That
+# file holds the cwd, then the session file, then an optional status, and it
+# survives across sessions, so it identifies the session this terminal last
+# ran. This is an internal detail, not a documented contract: every step below
+# is validated, and anything unexpected falls back to the newest session file
+# for the working directory.
+resolve_session_file() {
+  local tty_name="" pointer candidate
 
-# Most recently modified session file for this directory
-file=$(ls -t "$dir"/*.jsonl 2>/dev/null | head -n 1)
-[ -n "$file" ] || { echo "No session files in $dir" >&2; exit 1; }
+  if [ -n "${TTY:-}" ]; then
+    tty_name=$(basename "$TTY")
+  elif tty_name=$(tty 2>/dev/null); then
+    tty_name=$(basename "$tty_name")
+  else
+    tty_name=""
+  fi
+
+  if [ -n "$tty_name" ]; then
+    pointer="$TERMINAL_SESSIONS_DIR/$tty_name"
+    if [ -f "$pointer" ]; then
+      candidate=$(sed -n '2p' "$pointer")
+      case "$candidate" in
+        *.jsonl)
+          if [ -f "$candidate" ]; then
+            printf '%s\n' "$candidate"
+            return 0
+          fi
+          ;;
+      esac
+    fi
+  fi
+
+  # Fallback: newest session file for this working directory.
+  local dir="$SESSIONS_DIR/$key"
+  [ -d "$dir" ] || { echo "No omp sessions found for $(pwd)" >&2; return 1; }
+
+  local file
+  file=$(ls -t "$dir"/*.jsonl 2>/dev/null | head -n 1)
+  [ -n "$file" ] || { echo "No session files in $dir" >&2; return 1; }
+  printf '%s\n' "$file"
+}
+
+file=$(resolve_session_file)
 
 # Last assistant message: join all text blocks (skip thinking/tool calls)
 text=$(jq -rs '

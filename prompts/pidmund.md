@@ -19,8 +19,16 @@ The finished setup must:
 - install each selected script under its own name into a directory that is already on the user's `PATH`
 - prefer `~/.local/bin` when it exists and is on the `PATH`, otherwise ask where to install
 - use a symbolic link when the repository is in a permanent location so edits to the clone take effect; otherwise copy the file
+- resolve the transcript from the current session when the command runs inside its own agent, and only fall back to the newest transcript for the working directory otherwise
 - verify that `command -v <name>` resolves to the installed script for each installed command
 - report the exact rollback command for each installed link or copy
+
+Each script resolves its session transcript before falling back to modification time, because more than one session can share a working directory: collaborating subagents write into the same cwd-scoped session directory as their coordinator, so picking the newest file can surface a subagent's transcript instead.
+
+- `pidmund` reads `$PI_SESSION_FILE`, which pi exports and which names the exact transcript.
+- `ompidmund` has no equivalent variable, so it reads omp's per-terminal pointer at `~/.omp/agent/terminal-sessions/<tty>`, where line 1 is the cwd, line 2 the session file, and line 3 an optional status. That file is an internal detail rather than a documented contract, so the script validates that line 2 is an existing `.jsonl` file and falls back otherwise.
+
+Outside an agent session both scripts fall back to the newest transcript for the working directory.
 
 ## 1. Resolve the source scripts
 
@@ -58,6 +66,8 @@ If the repository is not in a permanent location, copy the file instead of linki
 
 ## 5. Verify
 
-Run `command -v <name>` for each installed command and confirm it prints a path. Then run it from a directory that has a session of the matching agent and confirm the response opens in Edmund.
+Run `command -v <name>` for each installed command and confirm it prints a path. Confirm the installed path is current, not a stale earlier revision: for a link, `readlink` must point at the source script in this repository; for a copy, `diff` must report no differences. An installed copy drifts silently whenever the source changes, which is why the link is preferred.
+
+Then run it from a directory that has a session of the matching agent and confirm the response opens in Edmund. Run it a second time from inside an agent session and confirm it opens that session's own transcript.
 
 Report the rollback command for each installed command, which is `rm <install-dir>/<name>` for a link or copy.
