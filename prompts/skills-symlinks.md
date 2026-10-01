@@ -77,17 +77,16 @@ Available in /absolute/path/to/repository
   Skills
   #  Skill               Description
   1  grill               Grill the user relentlessly about a plan, decision, or idea.
-  2  unslop              Cut AI tells from any writing. Must always apply.
-  3  writing-for-agents  Write and edit documents for agents.
+  2  writing-for-agents  Write and edit documents for agents.
 
   Prompt templates
   #  Template           Description
-  4  add-motion-design  Add one cohesive motion design pass to a finished website.
+  3  add-motion-design  Add one cohesive motion design pass to a finished website.
 
 Already installed: (none)
 
 Which items should I install?
-Reply with numbers (for example: 1 4), names, or "all".
+Reply with numbers (for example: 1 3), names, or "all".
 ```
 
 Shorten a long description to one line in the table. Mark any item that already links correctly as installed and leave it out of the default selection. Also mark items you cannot link because something already occupies the destination, and say what occupies it.
