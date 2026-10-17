@@ -33,3 +33,26 @@ test('the pane puts the most read file first and shows the lines read', async ($
     await ui.unmount()
   }
 })
+
+test('the tools tab counts the programs Bash ran and shows each command from its start', async ($, on) => {
+  on('tool.call', { tool: 'Bash' }, async () => ({ result: { stdout: '', stderr: '', interrupted: false }, text: '' }) as never)
+  await $.tool.call({ tool: 'Bash', command: 'cd /Users/jan/dev && git status -sb | head -1' })
+  await $.tool.call({ tool: 'Bash', command: 'git log --oneline -1' })
+  await $.tool.call({ tool: 'Bash', command: "cat > f <<'EOF'\nfoo | bar\nEOF\nFOO=1 git add f; \"$C\" plugin test ." })
+
+  for (const surface of ['terminal', 'desktop'] as const) {
+    const ui = await $.ui.mount({
+      plugin: 'session-activity',
+      surface,
+      component: 'Pane',
+      requestId: 'session-activity',
+      props: {},
+    } as never)
+    await ui.press({ key: 'tab-tools' })
+    expect(await ui.find({ text: /Bash ×3/ })).toBeDefined()
+    expect(await ui.find({ text: /^ git 3 · cat 1 · head 1$/ })).toBeDefined()
+    expect(await ui.find({ text: /^ git status -sb \| head -1$/ })).toBeDefined()
+    await ui.press({ key: 'tab-files' })
+    await ui.unmount()
+  }
+})

@@ -115,6 +115,46 @@ const filesOf = (list: Activity[]): FileRow[] => {
   )
 }
 
+/** Cuts the end off, so a command reads from its start. */
+const clip = (text: string, max: number) => (text.length <= max ? text : text.slice(0, max - 1) + '…')
+
+/** A Bash command on one line, without a leading `cd <dir> &&` that hides what it ran. */
+const commandOf = (command: string) =>
+  command
+    .replace(/^\s*cd\s+("[^"]*"|'[^']*'|\S+)\s*(&&|;)\s*/, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+
+const WRAPPERS = new Set(['sudo', 'time', 'env', 'command', 'exec', 'nohup', 'xargs'])
+
+/** The programs a command line runs: the first word of each piece between pipes, `&&`, `||` and `;`. */
+const programsOf = (command: string): string[] => {
+  const plain = command
+    .replace(/(<<-?\s*['"]?(\w+)['"]?[^\n]*)\n[\s\S]*?\n\s*\2\s*(?=\n|$)/g, '$1')
+    .replace(/'[^']*'|"(?:\\.|[^"\\])*"/g, 'Q')
+  const out: string[] = []
+  for (const piece of plain.split(/\|\||&&|[|;\n]|\$\(|`/)) {
+    const words = piece.trim().replace(/^[({!]+\s*/, '').split(/\s+/)
+    let i = 0
+    while (i < words.length && (/^\w+=/.test(words[i]!) || WRAPPERS.has(words[i]!))) i += 1
+    const word = words[i]
+    if (word === undefined || word === '' || word === 'Q' || word === 'cd' || /^[$)}<>&\d]/.test(word)) continue
+    out.push(word.slice(word.lastIndexOf('/') + 1))
+  }
+  return out
+}
+
+const bashCounts = (list: Activity[]) => {
+  const counts = new Map<string, number>()
+  let calls = 0
+  for (const one of list) {
+    if (one.tool !== 'Bash') continue
+    calls += 1
+    for (const program of new Set(programsOf(one.target))) counts.set(program, (counts.get(program) ?? 0) + 1)
+  }
+  return { calls, programs: [...counts.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0])) }
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -164,7 +204,8 @@ export const register: Register = on => {
 
     const files = filesOf(list)
     const fileRows = files.slice(0, Math.max(1, Math.floor(room / 2)))
-    const toolRows = [...list].reverse().slice(0, room)
+    const bash = bashCounts(list)
+    const toolRows = [...list].reverse().slice(0, Math.max(1, room - (bash.calls > 0 ? 2 : 0)))
 
     return (
       <Box flexDirection="column">
@@ -212,11 +253,25 @@ export const register: Register = on => {
               </Box>
             )
           })}
+        {current === 'tools' && bash.calls > 0 && (
+          <Text>
+            <Text bold>Bash ×{bash.calls}</Text>
+            <Text dimColor>
+              {' '}
+              {bash.programs.slice(0, 12).map(([name, n]) => `${name} ${n}`).join(' · ')}
+              {bash.programs.length > 12 ? ` · +${bash.programs.length - 12} more` : ''}
+            </Text>
+          </Text>
+        )}
         {current === 'tools' &&
           toolRows.map(one => (
             <Text color={one.isError ? 'red' : undefined} dimColor={one.isDone && !one.isError}>
               {one.isError ? 'fail' : one.isDone ? 'done' : 'runs'} {one.tool}
-              <Text dimColor> {short(one.target.replace(/\s+/g, ' '), Math.max(10, width - 12))}</Text>
+              {one.tool === 'Bash' ? (
+                <Text> {clip(commandOf(one.target), Math.max(10, width - 10))}</Text>
+              ) : (
+                <Text dimColor> {short(one.target.replace(/\s+/g, ' '), Math.max(10, width - one.tool.length - 6))}</Text>
+              )}
               {one.lines !== undefined && (
                 <Text dimColor> L{one.lines.start}–{one.lines.end}</Text>
               )}
