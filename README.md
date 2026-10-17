@@ -79,6 +79,20 @@ Standalone command-line scripts live in [`scripts/`](scripts/). They are install
 | --- | --- |
 | [`pidmund`](scripts/pidmund) | Opens the last assistant response of the current project's most recent pi session in the Edmund Markdown editor. Run it from any directory where you have chatted with pi. |
 
+## Mods
+
+[Claude Code mods](https://code.claude.com/docs/en/plugins/mods/overview) live in [`mods/`](mods/). This repository is a plugin marketplace, so each mod installs with one line at a Claude Code terminal prompt:
+
+```text
+/plugin install session-activity --marketplace janbsc4/dev
+```
+
+In the Claude desktop app, click **+** next to the prompt box, then **Plugins**, **Add marketplace** with `janbsc4/dev`, then add the plugin.
+
+| Mod | What it does |
+| --- | --- |
+| [`session-activity`](mods/session-activity/) | Adds `/activity`, a pane listing every file Claude read, edited or wrote this session, and every tool call with its status. |
+
 ## Skills
 
 Skills are reusable instructions that agents can load when a task calls for them.

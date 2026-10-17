@@ -1,3 +1,4 @@
 .DS_Store
 .kiro
 .pi
+mods/*/.claude-plugin/types/

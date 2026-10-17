@@ -1,0 +1,12 @@
+{
+  "name": "janbsc4-dev",
+  "description": "Claude Code mods from janbsc4/dev.",
+  "owner": { "name": "janbsc4" },
+  "plugins": [
+    {
+      "name": "session-activity",
+      "source": "./mods/session-activity",
+      "description": "A /activity pane listing every file and tool Claude Code touched this session."
+    }
+  ]
+}
