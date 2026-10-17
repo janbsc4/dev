@@ -5,7 +5,7 @@ import type { Activity, ActivityKind, ActivityTab, LineRange } from '../types'
 import { analyze, describeDoc, describeFound, describeLines, mentionsOf, programsOf, roleOf } from './analyze'
 import { aggregate, asHistory, describeProjectDoc, projectReportOf, storeKey, summarize, withSession } from './project'
 import type { ProjectHistory } from './project'
-import { reportOf } from './report'
+import { reportArgsOf, reportOf } from './report'
 
 const PANE = 'session-activity'
 const MAX_ENTRIES = 500
@@ -142,8 +142,8 @@ export const register: Register = on => {
     })
     await $.command.register({
       name: 'activity-report',
-      description: "Hand Claude a report of what it read, to judge the codebase's docs and maps",
-      argumentHint: '[project | reset]',
+      description: "Hand Claude a report of what it read, to judge the codebase's docs and maps; text after it is what Claude does with it",
+      argumentHint: '[project | reset] [what to do with it]',
     })
 
     return next(e)
@@ -157,17 +157,21 @@ export const register: Register = on => {
 
   on('command.run', { command: 'activity-report' }, async ($, e) => {
     const cwd = await cwdOf($)
-    const arg = e.args.trim().toLowerCase()
-    if (arg === 'reset') {
+    const { mode, ask } = reportArgsOf(e.args)
+    if (mode === 'reset') {
       await $.store.delete(storeKey(cwd))
       $.ui.invalidate('ui.render')
       return { text: `Cleared the saved reading history of ${cwd}. This session is saved again at the end of its next turn.` }
     }
-    if (arg === 'project') {
-      return { text: projectReportOf(aggregate(await historyOf($, await read($, entries), cwd)), cwd) }
-    }
+    const report =
+      mode === 'project'
+        ? projectReportOf(aggregate(await historyOf($, await read($, entries), cwd)), cwd)
+        : reportOf(analyze(await read($, entries)), relativeTo(cwd))
+    // A command's output starts no turn, and a command.run hook may not submit one: the engine would wait on the turn this
+    // hook holds. So what the person asked after the command is sent as their own prompt once the command is done.
+    if (ask !== '') $.clock.after(0, () => $.prompt.submit({ text: ask, asUser: true }))
 
-    return { text: reportOf(analyze(await read($, entries)), relativeTo(cwd)) }
+    return { text: report }
   })
 
   on('turn.complete', async ($, e, next) => {

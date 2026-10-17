@@ -1,4 +1,4 @@
-import { test, expect } from 'claude-code/testing'
+import { test, expect, mock } from 'claude-code/testing'
 
 const readResult = (path: string, startLine: number, numLines: number, totalLines: number) => ({
   result: { type: 'text', file: { filePath: path, content: '', numLines, startLine, totalLines } },
@@ -88,4 +88,30 @@ test('the docs tab shows which docs led to files and which folders needed search
     await ui.press({ key: 'tab-files' })
     await ui.unmount()
   }
+})
+
+test('/activity-report shows the report and sends what was typed after it as the next prompt', async ($, on) => {
+  const clock = mock.clock(on)
+  const sent: { text: string; asUser?: boolean }[] = []
+  on('session.cwd', async () => ({ value: '/proj' }) as never)
+  on('prompt.submit', async (_$, e) => {
+    const { text, origin } = e as unknown as { text: string; origin: { asUser?: boolean } }
+    sent.push({ text, asUser: origin.asUser })
+    return { text } as never
+  })
+  const run = (args: string) =>
+    $.command.run({ command: 'activity-report', args, origin: { kind: 'composer' }, presentation: {} } as never)
+
+  expect((await run('')).text).toMatch(/^# Session reading report/)
+  expect((await run('use this to update the docs')).text).toMatch(/^# Session reading report/)
+  expect((await run('Project  and map src/billing')).text).toMatch(/^# Reading report across sessions/)
+  await run('projects need maps')
+
+  expect(sent).toEqual([])
+  await clock.settle()
+  expect(sent).toEqual([
+    { text: 'use this to update the docs', asUser: true },
+    { text: 'and map src/billing', asUser: true },
+    { text: 'projects need maps', asUser: true },
+  ])
 })

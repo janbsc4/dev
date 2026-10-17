@@ -2,7 +2,7 @@ import { test, expect } from 'claude-code/testing'
 
 import type { Activity } from '../types'
 import { analyze, mentionsOf, programsOf, roleOf } from './analyze'
-import { reportOf } from './report'
+import { reportArgsOf, reportOf } from './report'
 
 let n = 0
 const call = (tool: string, target: string, more: Partial<Activity> = {}): Activity => ({
@@ -55,4 +55,12 @@ test('a doc that names a file routes it; a file found by searching marks its fol
   expect(report).toContain('| ARCHITECTURE.md | 1 | led to 1 file | src/auth/login.ts |')
   expect(report).toContain('| README.md | 1 | names 1 path, none opened after |  |')
   expect(report).toContain('| src/billing/ | 1 | 2 | 2 |')
+})
+
+test('activity-report arguments: a leading keyword, the rest as the ask', () => {
+  expect(reportArgsOf('')).toEqual({ ask: '' })
+  expect(reportArgsOf(' project ')).toEqual({ mode: 'project', ask: '' })
+  expect(reportArgsOf('RESET')).toEqual({ mode: 'reset', ask: '' })
+  expect(reportArgsOf('project update the README')).toEqual({ mode: 'project', ask: 'update the README' })
+  expect(reportArgsOf('projects are hard')).toEqual({ ask: 'projects are hard' })
 })
