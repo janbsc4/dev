@@ -1,5 +1,5 @@
 import { atom, read, update } from 'claude-code'
-import type { EngineInterface, Register } from 'claude-code'
+import type { Color, EngineInterface, Register } from 'claude-code'
 
 import type { Activity, ActivityKind, ActivityTab, LineRange } from '../types'
 import { analyze, describeDoc, describeFound, describeLines, mentionsOf, programsOf, roleOf } from './analyze'
@@ -65,12 +65,8 @@ const linesOf = (input: Record<string, unknown>, result: unknown): LineRange | u
   return { start, end: limit === undefined ? start : start + limit - 1 }
 }
 
-/** Cuts the start off, so a path keeps its file name. */
-const short = (text: string, max: number) =>
-  text.length <= max ? text : '…' + text.slice(text.length - max + 1)
-
-/** Cuts the end off, so a command reads from its start. */
-const clip = (text: string, max: number) => (text.length <= max ? text : text.slice(0, max - 1) + '…')
+/** `1 file`, `2 files`. */
+const plural = (n: number, one: string, many = `${one}s`) => `${n} ${n === 1 ? one : many}`
 
 /** A Bash command on one line, without a leading `cd <dir> &&` that hides what it ran. */
 const commandOf = (command: string) =>
@@ -94,7 +90,6 @@ const cwdOf = async ($: { session: { cwd: () => Promise<string> } }) => {
     return ''
   }
 }
-
 
 const sessionIdOf = async ($: { session: { id: () => Promise<string> } }) => {
   try {
@@ -228,13 +223,12 @@ export const register: Register = on => {
     const { Box, Text, Button } = $.ui.resolve(e)
     const list = await read($, entries)
     const current = await read($, tab)
-    const rel = relativeTo(await cwdOf($))
+    const cwd = await cwdOf($)
+    const rel = relativeTo(cwd)
     const room = Math.max(1, (e.viewport?.rows ?? 24) - 4)
-    const width = Math.max(20, (e.props.bodyColumns ?? 60) - 4)
 
     const insights = analyze(list)
     const { files, docs, unmapped, turns } = insights
-    const cwd = await cwdOf($)
     const project = current === 'project' && cwd !== '' ? aggregate(await historyOf($, list, cwd)) : undefined
     const counts: Record<ActivityTab, number | string> = {
       files: files.length,
@@ -243,80 +237,162 @@ export const register: Register = on => {
       tools: list.length,
     }
 
+    /** A big number over a caption; a row of them heads each tab. */
+    const Stat = ({ value, label }: { value: number | string; label: string }) => (
+      <Box flexDirection="column">
+        <Text size="heading" weight="semibold" tabular>
+          {String(value)}
+        </Text>
+        <Text size="caption" dimColor>
+          {label}
+        </Text>
+      </Box>
+    )
+    const Stats = ({ children }: { children?: JSX.Children }) => (
+      <Box flexDirection="row" flexWrap="wrap" columnGap="xl" rowGap="sm">
+        {children}
+      </Box>
+    )
+    const Section = ({ title, aside, children }: { title: string; aside?: string; children?: JSX.Children }) => (
+      <Box flexDirection="column" gap="xs">
+        <Box flexDirection="row" justifyContent="space-between" gap="sm">
+          <Text size="footnote" weight="semibold" dimColor>
+            {title.toUpperCase()}
+          </Text>
+          {aside !== undefined && (
+            <Text size="caption" dimColor>
+              {aside}
+            </Text>
+          )}
+        </Box>
+        {children}
+      </Box>
+    )
+    const Empty = ({ children }: { children?: JSX.Children }) => (
+      <Text size="footnote" dimColor italic>
+        {children}
+      </Text>
+    )
+    /** One file, doc or folder: its name and folder, a count on the right, a line of detail under it. */
+    const Row = (row: { name: string; dir?: string; tag?: string; mark?: Color; color?: Color; metric?: string; detail?: string }) => (
+      <Box flexDirection="column">
+        <Box flexDirection="row" justifyContent="space-between" gap="sm">
+          <Box flexDirection="row" gap="xs" flexShrink={1}>
+            {row.mark !== undefined && <Text color={row.mark}>●</Text>}
+            <Text weight="medium" color={row.color} wrap="truncate-start">
+              {row.name}
+            </Text>
+            {row.tag !== undefined && (
+              <Text size="caption" color="suggestion">
+                {row.tag}
+              </Text>
+            )}
+            {row.dir !== undefined && row.dir !== '' && (
+              <Text size="footnote" dimColor wrap="truncate-start">
+                {row.dir}
+              </Text>
+            )}
+          </Box>
+          {row.metric !== undefined && row.metric !== '' && (
+            <Text dimColor tabular>
+              {row.metric}
+            </Text>
+          )}
+        </Box>
+        {row.detail !== undefined && row.detail !== '' && (
+          <Text size="footnote" dimColor>
+            {row.detail}
+          </Text>
+        )}
+      </Box>
+    )
+    const Hint = ({ command, text }: { command: string; text: string }) => (
+      <Text size="caption" dimColor>
+        <Text mono>{command}</Text> {text}
+      </Text>
+    )
+
     const tabs = (
-      <Box>
-        {TABS.map(t => (
-          <Button
-            key={`tab-${t.id}`}
-            variant={current === t.id ? 'primary' : 'secondary'}
-            onPress={() => update($, tab, () => t.id)}
-          >
-            {t.label} ({counts[t.id]})
-          </Button>
-        ))}
+      <Box flexDirection="row" gap="xs" flexWrap="wrap">
+        {TABS.map(t => {
+          const isActive = current === t.id
+          return (
+            <Button
+              key={`tab-${t.id}`}
+              variant={isActive ? 'primary' : 'secondary'}
+              onPress={() => update($, tab, () => t.id)}
+            >
+              {t.label}{' '}
+              <Text dimColor={!isActive} tabular>
+                {String(counts[t.id])}
+              </Text>
+            </Button>
+          )
+        })}
+      </Box>
+    )
+    const Page = ({ children }: { children?: JSX.Children }) => (
+      <Box flexDirection="column" gap="md">
+        {tabs}
+        {children}
       </Box>
     )
 
     if (project !== undefined) {
-      const docRows = project.docs.slice(0, Math.max(1, Math.floor((room - 8) / 3)))
-      const dirRows = project.unmapped.slice(0, Math.max(1, Math.floor((room - 8) / 3)))
-      const fileRows = project.files.slice(0, Math.max(1, room - 8 - docRows.length - dirRows.length))
+      const share = Math.max(1, Math.floor((room - 12) / 6))
+      const docRows = project.docs.slice(0, share)
+      const dirRows = project.unmapped.slice(0, share)
+      const fileRows = project.files.slice(0, Math.max(1, Math.floor((room - 12) / 2) - docRows.length - dirRows.length))
       return (
-        <Box flexDirection="column">
-          {tabs}
-          <Text>
-            <Text bold>{project.sessions}</Text>
-            <Text dimColor>
-              {' '}session{project.sessions === 1 ? '' : 's'} in this project
-              {project.since === undefined ? '' : ` since ${project.since.slice(0, 10)}`}
-              {project.avgBefore === undefined ? '' : ` · ${project.avgBefore} calls before the first edit on average`}
-            </Text>
-          </Text>
-          <Text bold>Docs</Text>
-          {project.docs.length === 0 && <Text dimColor>   No doc was read with a tool.</Text>}
-          {docRows.map(d => (
-            <Text key={`pdoc-${d.path}`} color={d.ledSomewhere === 0 ? 'yellow' : undefined}>
-              {'   '}
-              <Text bold>{splitPath(d.path).name}</Text>
-              <Text dimColor> {describeProjectDoc(d)}</Text>
-            </Text>
-          ))}
-          <Text bold>Searched for, no doc points there</Text>
-          {project.unmapped.length === 0 && <Text dimColor>   None yet.</Text>}
-          {dirRows.map(d => (
-            <Text key={`pdir-${d.dir}`}>
-              {'   '}
-              {short(d.dir || './', Math.max(10, width - 40))}
-              <Text dimColor>
-                {' '}in {d.sessions} session{d.sessions === 1 ? '' : 's'} · {d.searches} search{d.searches === 1 ? '' : 'es'} · {d.files} file{d.files === 1 ? '' : 's'}
-              </Text>
-            </Text>
-          ))}
-          <Text bold>Most read</Text>
-          {fileRows.map(f => (
-            <Text key={`pfile-${f.path}`}>
-              {'   '}
-              <Text bold>{f.reads}× </Text>
-              {splitPath(f.path).name}
-              <Text dimColor>
-                {' '}in {f.sessions} session{f.sessions === 1 ? '' : 's'}
-                {f.routed > 0 ? ` · via a doc ${f.routed}×` : ''}
-                {' '}
-                {short(splitPath(f.path).dir, Math.max(8, width - 40))}
-              </Text>
-            </Text>
-          ))}
-          <Text dimColor>/activity-report project hands this to Claude · reset clears it.</Text>
-        </Box>
+        <Page>
+          <Stats>
+            <Stat value={project.sessions} label={project.sessions === 1 ? 'session' : 'sessions'} />
+            {project.since !== undefined && <Stat value={project.since.slice(0, 10)} label="first recorded" />}
+            {project.avgBefore !== undefined && <Stat value={project.avgBefore} label="calls before first edit" />}
+            <Stat value={project.searches} label={project.searches === 1 ? 'search' : 'searches'} />
+          </Stats>
+          <Section title="Docs" aside="read with a tool">
+            {project.docs.length === 0 && <Empty>No doc was read with a tool.</Empty>}
+            {docRows.map(d => (
+              <Row
+                name={splitPath(d.path).name}
+                dir={splitPath(d.path).dir}
+                mark={d.ledSomewhere === 0 ? 'warning' : 'success'}
+                metric={`${d.reads}×`}
+                detail={describeProjectDoc(d)}
+              />
+            ))}
+          </Section>
+          <Section title="Unmapped folders" aside="searched for, no doc points there">
+            {project.unmapped.length === 0 && <Empty>None yet.</Empty>}
+            {dirRows.map(d => (
+              <Row
+                name={d.dir || './'}
+                metric={plural(d.searches, 'search', 'searches')}
+                detail={`in ${plural(d.sessions, 'session')} · ${plural(d.files, 'file')}`}
+              />
+            ))}
+          </Section>
+          <Section title="Most read">
+            {fileRows.map(f => (
+              <Row
+                name={splitPath(f.path).name}
+                dir={splitPath(f.path).dir}
+                metric={`${f.reads}×`}
+                detail={`in ${plural(f.sessions, 'session')}${f.routed > 0 ? ` · via a doc ${f.routed}×` : ''}`}
+              />
+            ))}
+          </Section>
+          <Hint command="/activity-report project" text="hands this to Claude · reset clears it" />
+        </Page>
       )
     }
 
     if (list.length === 0) {
       return (
-        <Box flexDirection="column">
-          {tabs}
-          <Text dimColor>Nothing used yet.</Text>
-        </Box>
+        <Page>
+          <Empty>Nothing used yet. Files, docs and tools show up here as Claude works.</Empty>
+        </Page>
       )
     }
 
@@ -326,58 +402,45 @@ export const register: Register = on => {
       const edited = turns.filter(t => t.hasEdit)
       const avg = edited.length === 0 ? 0 : Math.round(edited.reduce((s, t) => s + t.before, 0) / edited.length)
       const share = opened.length === 0 ? 0 : Math.round((routed / opened.length) * 100)
-      const docRows = docs.slice(0, Math.max(1, Math.floor((room - 8) / 2)))
-      const dirRows = unmapped.slice(0, Math.max(1, room - 8 - docRows.length * 2))
+      const docRows = docs.slice(0, Math.max(1, Math.floor((room - 12) / 4)))
+      const dirRows = unmapped.slice(0, Math.max(1, Math.floor((room - 12) / 2) - docRows.length))
 
       return (
-        <Box flexDirection="column">
-          {tabs}
-          <Text>
-            <Text bold>{share}%</Text>
-            <Text dimColor> of {opened.length} opened files were named by a doc read before · {insights.searches} searches</Text>
-          </Text>
-          {edited.length > 0 && (
-            <Text>
-              <Text bold>{avg}</Text>
-              <Text dimColor>
-                {' '}calls before the first edit, average of {edited.length} turn{edited.length === 1 ? '' : 's'} · last{' '}
-                {edited.slice(-5).map(t => t.before).join(', ')}
-              </Text>
-            </Text>
-          )}
-          <Text bold>Docs read</Text>
-          {docs.length === 0 && <Text dimColor>   No doc was read with a tool.</Text>}
-          {docRows.map(doc => {
-            const { dir, name } = splitPath(rel(doc.path))
-            return (
-              <Box key={`doc-${doc.path}`} flexDirection="column">
-                <Text color={doc.routed.length === 0 ? 'yellow' : undefined}>
-                  {'   '}
-                  <Text bold>{name}</Text>
-                  <Text dimColor> {short(dir, Math.max(8, width - name.length - 8))}</Text>
-                </Text>
-                <Text dimColor>
-                  {'      '}
-                  {doc.reads}× read · {describeDoc(doc)}
-                  {doc.routed.length > 0 ? `: ${clip(doc.routed.map(p => splitPath(p).name).join(', '), Math.max(10, width - 30))}` : ''}
-                </Text>
-              </Box>
-            )
-          })}
-          <Text bold>Found by searching, no doc points there</Text>
-          {unmapped.length === 0 && <Text dimColor>   None yet.</Text>}
-          {dirRows.map(d => (
-            <Text key={`dir-${d.dir}`}>
-              {'   '}
-              {short(rel(d.dir) || './', Math.max(10, width - 30))}
-              <Text dimColor>
-                {' '}
-                {d.files} file{d.files === 1 ? '' : 's'} · {d.searches} search{d.searches === 1 ? '' : 'es'}
-              </Text>
-            </Text>
-          ))}
-          <Text dimColor>/activity-report hands this to Claude to suggest doc changes.</Text>
-        </Box>
+        <Page>
+          <Stats>
+            <Stat value={`${share}%`} label={`of ${plural(opened.length, 'opened file')} named by a doc`} />
+            {edited.length > 0 && (
+              <Stat value={avg} label={`calls before first edit · last ${edited.slice(-5).map(t => t.before).join(', ')}`} />
+            )}
+            <Stat value={insights.searches} label={insights.searches === 1 ? 'search' : 'searches'} />
+          </Stats>
+          <Section title="Docs read">
+            {docs.length === 0 && <Empty>No doc was read with a tool.</Empty>}
+            {docRows.map(doc => {
+              const { dir, name } = splitPath(rel(doc.path))
+              const led = doc.routed.length > 0 ? `: ${doc.routed.map(p => splitPath(p).name).join(', ')}` : ''
+              return (
+                <Row
+                  name={name}
+                  dir={dir}
+                  mark={doc.routed.length === 0 ? 'warning' : 'success'}
+                  metric={`${doc.reads}×`}
+                  detail={describeDoc(doc) + led}
+                />
+              )
+            })}
+          </Section>
+          <Section title="Unmapped folders" aside="found by searching, no doc points there">
+            {unmapped.length === 0 && <Empty>None yet.</Empty>}
+            {dirRows.map(d => (
+              <Row
+                name={rel(d.dir) || './'}
+                detail={`${plural(d.files, 'file')} · ${plural(d.searches, 'search', 'searches')}`}
+              />
+            ))}
+          </Section>
+          <Hint command="/activity-report" text="hands this to Claude to suggest doc changes" />
+        </Page>
       )
     }
 
@@ -390,65 +453,94 @@ export const register: Register = on => {
         for (const p of new Set(programsOf(one.target))) bash.set(p, (bash.get(p) ?? 0) + 1)
       }
       const programs = [...bash.entries()].sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
-      const toolRows = [...list].reverse().slice(0, Math.max(1, room - (bashCalls > 0 ? 2 : 0)))
+      const failed = list.filter(one => one.isError).length
+      const running = list.filter(one => !one.isDone).length
+      const toolRows = [...list].reverse().slice(0, Math.max(1, room - (bashCalls > 0 ? 9 : 6)))
 
       return (
-        <Box flexDirection="column">
-          {tabs}
+        <Page>
+          <Stats>
+            <Stat value={list.length} label={list.length === 1 ? 'call' : 'calls'} />
+            {running > 0 && <Stat value={running} label="running" />}
+            <Stat value={failed} label="failed" />
+          </Stats>
           {bashCalls > 0 && (
-            <Text>
-              <Text bold>Bash ×{bashCalls}</Text>
-              <Text dimColor>
-                {' '}
-                {programs.slice(0, 12).map(([name, n]) => `${name} ${n}`).join(' · ')}
-                {programs.length > 12 ? ` · +${programs.length - 12} more` : ''}
-              </Text>
-            </Text>
+            <Section title="Bash" aside={plural(bashCalls, 'call')}>
+              <Box flexDirection="row" flexWrap="wrap" columnGap="md">
+                {programs.slice(0, 16).map(([name, n]) => (
+                  <Text>
+                    <Text mono>{name}</Text> <Text dimColor tabular>{String(n)}</Text>
+                  </Text>
+                ))}
+                {programs.length > 16 && <Text dimColor>+{String(programs.length - 16)} more</Text>}
+              </Box>
+            </Section>
           )}
-          {toolRows.map(one => (
-            <Text color={one.isError ? 'red' : undefined} dimColor={one.isDone && !one.isError}>
-              {one.isError ? 'fail' : one.isDone ? 'done' : 'runs'} {one.tool}
-              {one.tool === 'Bash' ? (
-                <Text> {clip(commandOf(one.target), Math.max(10, width - 10))}</Text>
-              ) : (
-                <Text dimColor> {short(rel(one.target).replace(/\s+/g, ' '), Math.max(10, width - one.tool.length - 6))}</Text>
-              )}
-              {one.lines !== undefined && <Text dimColor> L{one.lines.start}–{one.lines.end}</Text>}
-            </Text>
-          ))}
-        </Box>
+          <Section title="Calls" aside="newest first">
+            {toolRows.map(one => (
+              <Box flexDirection="row" gap="sm">
+                <Text color={one.isError ? 'error' : one.isDone ? 'success' : 'warning'}>
+                  {one.isError ? '✗' : one.isDone ? '✓' : '…'}
+                </Text>
+                <Text weight="medium" color={one.isError ? 'error' : undefined}>
+                  {one.tool}
+                </Text>
+                <Box flexShrink={1}>
+                  {one.tool === 'Bash' ? (
+                    <Text mono size="footnote" wrap="truncate-end">
+                      {commandOf(one.target)}
+                    </Text>
+                  ) : (
+                    <Text size="footnote" dimColor wrap="truncate-start">
+                      {rel(one.target).replace(/\s+/g, ' ')}
+                    </Text>
+                  )}
+                </Box>
+                {one.lines !== undefined && (
+                  <Text size="footnote" dimColor tabular>
+                    L{one.lines.start}–{one.lines.end}
+                  </Text>
+                )}
+              </Box>
+            ))}
+          </Section>
+        </Page>
       )
     }
 
-    const fileRows = files.slice(0, Math.max(1, Math.floor((room - 1) / 2)))
+    const fileRows = files.slice(0, Math.max(1, Math.floor((room - 5) / 2)))
+    const reads = files.reduce((sum, f) => sum + f.reads, 0)
+    const changed = files.filter(f => f.edits + f.writes > 0).length
 
     return (
-      <Box flexDirection="column">
-        {tabs}
-        <Text dimColor>Most read first</Text>
-        {fileRows.map(row => {
-          const { dir, name } = splitPath(rel(row.path))
-          const changes = [
-            row.edits > 0 ? `edited ${row.edits}×` : '',
-            row.writes > 0 ? `written ${row.writes}×` : '',
-            row.errors > 0 ? `${row.errors} failed` : '',
-          ]
-          const detail = [describeLines(row), describeFound(row, rel), ...changes].filter(Boolean).join(' · ')
-          return (
-            <Box key={row.path} flexDirection="column">
-              <Text color={row.errors > 0 ? 'red' : undefined}>
-                <Text bold>{row.reads > 0 ? `${row.reads}× ` : '   '}</Text>
-                <Text bold>{name}</Text>
-                <Text dimColor> {row.role === 'code' ? '' : `${row.role} `}{short(dir, Math.max(8, width - name.length - 12))}</Text>
-              </Text>
-              <Text dimColor>
-                {'   '}
-                {detail || 'not read'}
-              </Text>
-            </Box>
-          )
-        })}
-      </Box>
+      <Page>
+        <Stats>
+          <Stat value={files.length} label={files.length === 1 ? 'file' : 'files'} />
+          <Stat value={reads} label={reads === 1 ? 'read' : 'reads'} />
+          <Stat value={changed} label="changed" />
+        </Stats>
+        <Section title="Files" aside="most read first">
+          {fileRows.map(row => {
+            const { dir, name } = splitPath(rel(row.path))
+            const changes = [
+              row.edits > 0 ? `edited ${row.edits}×` : '',
+              row.writes > 0 ? `written ${row.writes}×` : '',
+              row.errors > 0 ? `${row.errors} failed` : '',
+            ]
+            const detail = [describeLines(row), describeFound(row, rel), ...changes].filter(Boolean).join(' · ')
+            return (
+              <Row
+                name={name}
+                dir={dir}
+                tag={row.role === 'code' ? undefined : row.role}
+                color={row.errors > 0 ? 'error' : undefined}
+                metric={row.reads > 0 ? `${row.reads}×` : ''}
+                detail={detail || 'not read'}
+              />
+            )
+          })}
+        </Section>
+      </Page>
     )
   })
 }

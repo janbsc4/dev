@@ -49,9 +49,10 @@ test('the tools tab counts the programs Bash ran and shows each command from its
       props: {},
     } as never)
     await ui.press({ key: 'tab-tools' })
-    expect(await ui.find({ text: /Bash ×3/ })).toBeDefined()
-    expect(await ui.find({ text: /^ git 3 · cat 1 · head 1$/ })).toBeDefined()
-    expect(await ui.find({ text: /^ git status -sb \| head -1$/ })).toBeDefined()
+    expect(await ui.find({ text: /^3 calls$/ })).toBeDefined()
+    const chips = await ui.findAll({ text: /^[a-z]+ \d+$/ })
+    expect(chips.map(c => c.text)).toEqual(['git 3', 'cat 1', 'head 1'])
+    expect(await ui.find({ text: /^git status -sb \| head -1$/ })).toBeDefined()
     await ui.press({ key: 'tab-files' })
     await ui.unmount()
   }
@@ -82,7 +83,8 @@ test('the docs tab shows which docs led to files and which folders needed search
     expect(await ui.find({ text: /found after 1 search/ })).toBeDefined()
     await ui.press({ key: 'tab-docs' })
     expect(await ui.find({ text: /led to 1 file: login\.ts/ })).toBeDefined()
-    expect(await ui.find({ text: /src\/billing\/ 1 file · 1 search$/ })).toBeDefined()
+    expect(await ui.find({ text: /^src\/billing\/$/ })).toBeDefined()
+    expect(await ui.find({ text: /^1 file · 1 search$/ })).toBeDefined()
     await ui.press({ key: 'tab-files' })
     await ui.unmount()
   }
