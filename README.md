@@ -91,7 +91,7 @@ In the Claude desktop app, click **+** next to the prompt box, then **Plugins**,
 
 | Mod | What it does |
 | --- | --- |
-| [`session-activity`](mods/session-activity/) | Adds `/activity`, a pane listing every file Claude read, edited or wrote this session, and every tool call with its status. |
+| [`session-activity`](mods/session-activity/) | Adds `/activity`, a pane of the files Claude read (most read first, with line ranges), the docs it read and whether they led to the files it opened, the folders it had to search for, and every tool call. `/activity-report` hands that as a report to Claude, to judge which docs and maps help, which are dead weight, and where one is missing. |
 
 ## Skills
 

@@ -1,6 +1,6 @@
 {
   "name": "session-activity",
-  "version": "0.3.0",
+  "version": "0.4.0",
   "description": "A /activity pane listing every file and tool Claude Code touched this session.",
   "author": { "name": "janbsc4" },
   "types": "./types/index.d.ts"
