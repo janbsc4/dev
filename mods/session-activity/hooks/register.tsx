@@ -1,8 +1,10 @@
 import { atom, read, update } from 'claude-code'
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
 import type { Activity, ActivityKind, ActivityTab, LineRange } from '../types'
 import { analyze, describeDoc, describeFound, describeLines, mentionsOf, programsOf, roleOf } from './analyze'
+import { aggregate, asHistory, describeProjectDoc, projectReportOf, storeKey, summarize, withSession } from './project'
+import type { ProjectHistory } from './project'
 import { reportOf } from './report'
 
 const PANE = 'session-activity'
@@ -28,6 +30,7 @@ const KINDS: Record<string, ActivityKind> = {
 const TABS: { id: ActivityTab; label: string }[] = [
   { id: 'files', label: 'Files' },
   { id: 'docs', label: 'Docs' },
+  { id: 'project', label: 'Project' },
   { id: 'tools', label: 'Tools' },
 ]
 
@@ -93,6 +96,49 @@ const cwdOf = async ($: { session: { cwd: () => Promise<string> } }) => {
 }
 
 
+const sessionIdOf = async ($: { session: { id: () => Promise<string> } }) => {
+  try {
+    return await $.session.id()
+  } catch {
+    return 'session'
+  }
+}
+
+/** This project's saved history with this session's live summary put in, unsaved. */
+const historyOf = async (
+  $: { store: { get: (key: string) => Promise<unknown> }; session: { id: () => Promise<string> } },
+  list: Activity[],
+  cwd: string,
+): Promise<ProjectHistory> => {
+  let saved: ProjectHistory | undefined
+  try {
+    saved = asHistory(await $.store.get(storeKey(cwd)))
+  } catch {
+    saved = undefined
+  }
+  if (list.length === 0) return saved ?? { sessions: {} }
+  return withSession(saved, await sessionIdOf($), summarize(analyze(list), relativeTo(cwd), new Date().toISOString()))
+}
+
+/** Saves this session's summary under its project, so later sessions add to it. */
+const save = async ($: EngineInterface) => {
+  const list = await read($, entries)
+  const cwd = await cwdOf($)
+  if (list.length === 0 || cwd === '') return
+  const history = await historyOf($, list, cwd)
+  // The store holds 4 MiB in all: when a write is refused, drop this project's oldest session and try again.
+  let sessions = Object.entries(history.sessions)
+  for (let attempt = 0; attempt < 4; attempt += 1) {
+    try {
+      await $.store.set(storeKey(cwd), { sessions: Object.fromEntries(sessions) })
+      return
+    } catch (error) {
+      if (sessions.length <= 1 || attempt === 3) throw error
+      sessions = sessions.slice(1)
+    }
+  }
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     await $.command.register({
@@ -101,7 +147,8 @@ export const register: Register = on => {
     })
     await $.command.register({
       name: 'activity-report',
-      description: "Hand Claude a report of what it read this session, to judge the codebase's docs and maps",
+      description: "Hand Claude a report of what it read, to judge the codebase's docs and maps",
+      argumentHint: '[project | reset]',
     })
 
     return next(e)
@@ -113,10 +160,32 @@ export const register: Register = on => {
     return { text: isPlaced ? 'Activity pane opened.' : 'No surface can draw the activity pane here.' }
   })
 
-  on('command.run', { command: 'activity-report' }, async $ => {
-    const rel = relativeTo(await cwdOf($))
+  on('command.run', { command: 'activity-report' }, async ($, e) => {
+    const cwd = await cwdOf($)
+    const arg = e.args.trim().toLowerCase()
+    if (arg === 'reset') {
+      await $.store.delete(storeKey(cwd))
+      $.ui.invalidate('ui.render')
+      return { text: `Cleared the saved reading history of ${cwd}. This session is saved again at the end of its next turn.` }
+    }
+    if (arg === 'project') {
+      return { text: projectReportOf(aggregate(await historyOf($, await read($, entries), cwd)), cwd) }
+    }
 
-    return { text: reportOf(analyze(await read($, entries)), rel) }
+    return { text: reportOf(analyze(await read($, entries)), relativeTo(cwd)) }
+  })
+
+  on('turn.complete', async ($, e, next) => {
+    const done = await next(e)
+    if (e.agentId === undefined) await save($).catch(() => undefined)
+
+    return done
+  })
+
+  on('session.end', async ($, e, next) => {
+    await save($).catch(() => undefined)
+
+    return next(e)
   })
 
   on('turn.start', async ($, e, next) => {
@@ -165,7 +234,14 @@ export const register: Register = on => {
 
     const insights = analyze(list)
     const { files, docs, unmapped, turns } = insights
-    const counts: Record<ActivityTab, number> = { files: files.length, docs: docs.length, tools: list.length }
+    const cwd = await cwdOf($)
+    const project = current === 'project' && cwd !== '' ? aggregate(await historyOf($, list, cwd)) : undefined
+    const counts: Record<ActivityTab, number | string> = {
+      files: files.length,
+      docs: docs.length,
+      project: project?.sessions ?? '…',
+      tools: list.length,
+    }
 
     const tabs = (
       <Box>
@@ -180,6 +256,60 @@ export const register: Register = on => {
         ))}
       </Box>
     )
+
+    if (project !== undefined) {
+      const docRows = project.docs.slice(0, Math.max(1, Math.floor((room - 8) / 3)))
+      const dirRows = project.unmapped.slice(0, Math.max(1, Math.floor((room - 8) / 3)))
+      const fileRows = project.files.slice(0, Math.max(1, room - 8 - docRows.length - dirRows.length))
+      return (
+        <Box flexDirection="column">
+          {tabs}
+          <Text>
+            <Text bold>{project.sessions}</Text>
+            <Text dimColor>
+              {' '}session{project.sessions === 1 ? '' : 's'} in this project
+              {project.since === undefined ? '' : ` since ${project.since.slice(0, 10)}`}
+              {project.avgBefore === undefined ? '' : ` · ${project.avgBefore} calls before the first edit on average`}
+            </Text>
+          </Text>
+          <Text bold>Docs</Text>
+          {project.docs.length === 0 && <Text dimColor>   No doc was read with a tool.</Text>}
+          {docRows.map(d => (
+            <Text key={`pdoc-${d.path}`} color={d.ledSomewhere === 0 ? 'yellow' : undefined}>
+              {'   '}
+              <Text bold>{splitPath(d.path).name}</Text>
+              <Text dimColor> {describeProjectDoc(d)}</Text>
+            </Text>
+          ))}
+          <Text bold>Searched for, no doc points there</Text>
+          {project.unmapped.length === 0 && <Text dimColor>   None yet.</Text>}
+          {dirRows.map(d => (
+            <Text key={`pdir-${d.dir}`}>
+              {'   '}
+              {short(d.dir || './', Math.max(10, width - 40))}
+              <Text dimColor>
+                {' '}in {d.sessions} session{d.sessions === 1 ? '' : 's'} · {d.searches} search{d.searches === 1 ? '' : 'es'} · {d.files} file{d.files === 1 ? '' : 's'}
+              </Text>
+            </Text>
+          ))}
+          <Text bold>Most read</Text>
+          {fileRows.map(f => (
+            <Text key={`pfile-${f.path}`}>
+              {'   '}
+              <Text bold>{f.reads}× </Text>
+              {splitPath(f.path).name}
+              <Text dimColor>
+                {' '}in {f.sessions} session{f.sessions === 1 ? '' : 's'}
+                {f.routed > 0 ? ` · via a doc ${f.routed}×` : ''}
+                {' '}
+                {short(splitPath(f.path).dir, Math.max(8, width - 40))}
+              </Text>
+            </Text>
+          ))}
+          <Text dimColor>/activity-report project hands this to Claude · reset clears it.</Text>
+        </Box>
+      )
+    }
 
     if (list.length === 0) {
       return (

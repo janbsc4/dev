@@ -1,5 +1,5 @@
 export type ActivityKind = 'read' | 'edit' | 'write' | 'run' | 'search' | 'other'
-export type ActivityTab = 'files' | 'docs' | 'tools'
+export type ActivityTab = 'files' | 'docs' | 'project' | 'tools'
 /** Lines a Read returned, 1-based and inclusive; `total` is the file's length when known. */
 export type LineRange = { start: number; end: number; total?: number }
 export type Activity = {
