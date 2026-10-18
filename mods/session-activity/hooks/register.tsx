@@ -139,6 +139,8 @@ export const register: Register = on => {
     await $.command.register({
       name: 'activity',
       description: 'Show the files, docs and tools Claude used this session in a pane',
+      // Opening the pane reads nothing of the turn, so it runs at once mid-turn instead of waiting for the turn to end.
+      immediate: true,
     })
     await $.command.register({
       name: 'activity-report',
