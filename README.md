@@ -91,7 +91,7 @@ In the Claude desktop app, click **+** next to the prompt box, then **Plugins**,
 
 | Mod | What it does |
 | --- | --- |
-| [`session-activity`](mods/session-activity/) | Adds `/activity`, a pane of the files Claude read (most read first, with line ranges), the docs it read and whether they led to the files it opened, the folders it had to search for, and every tool call. A Project tab adds this up over the last 40 sessions in the same folder. `/activity-report` (or `/activity-report project`) hands that as a report to Claude, to judge which docs and maps help, which are dead weight, and where one is missing. Text after it is sent as your next prompt, so `/activity-report update the docs so the most read files are easier to find` acts on the report; `/activity-report reset` clears a project's history. |
+| [`session-activity`](mods/session-activity/) | Adds `/activity`, a pane of the files Claude read (most read first, with line ranges), the docs it read and whether they led to the files it opened, the folders it had to search for, and every tool call. A Project tab adds this up over the last 40 sessions in the same folder. `/activity-report` hands that project report to Claude (`/activity-report session` hands only this session's), to judge which docs and maps help, which are dead weight, and where one is missing. Text after it is sent as your next prompt, so `/activity-report update the docs so the most read files are easier to find` acts on the report; `/activity-report reset` clears a project's history. |
 
 ## Skills
 

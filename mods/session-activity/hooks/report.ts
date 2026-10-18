@@ -70,9 +70,9 @@ export const reportOf = (insights: Insights, rel: (p: string) => string): string
   return out.join('\n')
 }
 
-/** `/activity-report [project | reset] [what to do with it]`: the leading keyword, and the rest as typed. */
-export const reportArgsOf = (args: string): { mode?: 'project' | 'reset'; ask: string } => {
-  const match = /^\s*(project|reset)(?=\s|$)\s*/i.exec(args)
-  if (match === null) return { ask: args.trim() }
-  return { mode: match[1]!.toLowerCase() as 'project' | 'reset', ask: args.slice(match[0].length).trim() }
+/** `/activity-report [session | project | reset] [what to do with it]`: the leading keyword (project when none), and the rest as typed. */
+export const reportArgsOf = (args: string): { mode: 'session' | 'project' | 'reset'; ask: string } => {
+  const match = /^\s*(session|project|reset)(?=\s|$)\s*/i.exec(args)
+  if (match === null) return { mode: 'project', ask: args.trim() }
+  return { mode: match[1]!.toLowerCase() as 'session' | 'project' | 'reset', ask: args.slice(match[0].length).trim() }
 }

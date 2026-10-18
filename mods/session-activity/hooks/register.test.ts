@@ -90,7 +90,7 @@ test('the docs tab shows which docs led to files and which folders needed search
   }
 })
 
-test('/activity-report shows the report and sends what was typed after it as the next prompt', async ($, on) => {
+test('/activity-report shows the project report by default and sends what was typed after it as the next prompt', async ($, on) => {
   const clock = mock.clock(on)
   const sent: { text: string; asUser?: boolean }[] = []
   on('session.cwd', async () => ({ value: '/proj' }) as never)
@@ -102,9 +102,10 @@ test('/activity-report shows the report and sends what was typed after it as the
   const run = (args: string) =>
     $.command.run({ command: 'activity-report', args, origin: { kind: 'composer' }, presentation: {} } as never)
 
-  expect((await run('')).text).toMatch(/^# Session reading report/)
-  expect((await run('use this to update the docs')).text).toMatch(/^# Session reading report/)
+  expect((await run('')).text).toMatch(/^# Reading report across sessions/)
+  expect((await run('use this to update the docs')).text).toMatch(/^# Reading report across sessions/)
   expect((await run('Project  and map src/billing')).text).toMatch(/^# Reading report across sessions/)
+  expect((await run('session')).text).toMatch(/^# Session reading report/)
   await run('projects need maps')
 
   expect(sent).toEqual([])

@@ -144,8 +144,8 @@ export const register: Register = on => {
     })
     await $.command.register({
       name: 'activity-report',
-      description: "Hand Claude a report of what it read, to judge the codebase's docs and maps; text after it is what Claude does with it",
-      argumentHint: '[project | reset] [what to do with it]',
+      description: "Hand Claude a report of what it read across this project's sessions, to judge the codebase's docs and maps; text after it is what Claude does with it",
+      argumentHint: '[session | project | reset] [what to do with it]',
     })
 
     return next(e)
@@ -166,9 +166,9 @@ export const register: Register = on => {
       return { text: `Cleared the saved reading history of ${cwd}. This session is saved again at the end of its next turn.` }
     }
     const report =
-      mode === 'project'
-        ? projectReportOf(aggregate(await historyOf($, await read($, entries), cwd)), cwd)
-        : reportOf(analyze(await read($, entries)), relativeTo(cwd))
+      mode === 'session'
+        ? reportOf(analyze(await read($, entries)), relativeTo(cwd))
+        : projectReportOf(aggregate(await historyOf($, await read($, entries), cwd)), cwd)
     // A command's output starts no turn, and a command.run hook may not submit one: the engine would wait on the turn this
     // hook holds. So what the person asked after the command is sent as their own prompt once the command is done.
     if (ask !== '') $.clock.after(0, () => $.prompt.submit({ text: ask, asUser: true }))
@@ -389,7 +389,7 @@ export const register: Register = on => {
               />
             ))}
           </Section>
-          <Hint command="/activity-report project" text="hands this to Claude · reset clears it" />
+          <Hint command="/activity-report" text="hands this to Claude · reset clears it" />
         </Page>
       )
     }
@@ -445,7 +445,7 @@ export const register: Register = on => {
               />
             ))}
           </Section>
-          <Hint command="/activity-report" text="hands this to Claude to suggest doc changes" />
+          <Hint command="/activity-report session" text="hands this to Claude to suggest doc changes" />
         </Page>
       )
     }

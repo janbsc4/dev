@@ -57,10 +57,11 @@ test('a doc that names a file routes it; a file found by searching marks its fol
   expect(report).toContain('| src/billing/ | 1 | 2 | 2 |')
 })
 
-test('activity-report arguments: a leading keyword, the rest as the ask', () => {
-  expect(reportArgsOf('')).toEqual({ ask: '' })
+test('activity-report arguments: a leading keyword, project when none, the rest as the ask', () => {
+  expect(reportArgsOf('')).toEqual({ mode: 'project', ask: '' })
+  expect(reportArgsOf('session map src/billing')).toEqual({ mode: 'session', ask: 'map src/billing' })
   expect(reportArgsOf(' project ')).toEqual({ mode: 'project', ask: '' })
   expect(reportArgsOf('RESET')).toEqual({ mode: 'reset', ask: '' })
   expect(reportArgsOf('project update the README')).toEqual({ mode: 'project', ask: 'update the README' })
-  expect(reportArgsOf('projects are hard')).toEqual({ ask: 'projects are hard' })
+  expect(reportArgsOf('projects are hard')).toEqual({ mode: 'project', ask: 'projects are hard' })
 })
